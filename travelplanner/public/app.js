@@ -21,10 +21,12 @@ function timeAgo(dateStr) { if (!dateStr) return ""; const diff = Date.now() - n
 
 // ── Visual helpers ──
 // Flag files are named like "United-Kingdom.svg".
+
 function flagUrl(country) {
   if (!country) return "";
-  return `/img/flags/${country.replace(/\s+/g, "-")}.svg`;
+  return `/${country.replace(/\s+/g, "-").toLowerCase()}.svg`;
 }
+
 // Destination cover: a soft colour mesh seeded from the country name, so every country gets a stable look.
 function destStyle(country) {
   let h = 0;

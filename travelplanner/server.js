@@ -1,5 +1,6 @@
 import "./server/env.js";
 import { config, assertConfig } from "./server/config.js";
+import mongoose from "mongoose";
 import express from "express";
 import bcrypt from "bcryptjs";
 import { readFileSync } from "fs";
@@ -29,6 +30,35 @@ assertConfig();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+let dbConnection;
+
+function ensureDbConnected() {
+  if (mongoose.connection.readyState === 1) {
+    return Promise.resolve();
+  }
+
+  if (!dbConnection) {
+    dbConnection = connect(config.mongodbUri).catch(err => {
+      dbConnection = undefined;
+      throw err;
+    });
+  }
+
+  return dbConnection;
+}
+
+
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbConnected();
+    next();
+  } catch (err) {
+    console.error("[db] Connection failed:", err.message);
+    return res.status(503).json({
+      error: "Database temporarily unavailable"
+    });
+  }
+});
 
 app.disable("x-powered-by");
 // Only a proxy on this machine (the share tunnel) may set X-Forwarded-*: req.ip / req.secure come from it.

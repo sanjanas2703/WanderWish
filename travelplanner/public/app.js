@@ -24,7 +24,7 @@ function timeAgo(dateStr) { if (!dateStr) return ""; const diff = Date.now() - n
 
 function flagUrl(country) {
   if (!country) return "";
-  return `/${country.replace(/\s+/g, "-").toLowerCase()}.svg`;
+  return `/img/flags/${country.replace(/\s+/g, "-").toLowerCase()}.svg`;
 }
 
 // Destination cover: a soft colour mesh seeded from the country name, so every country gets a stable look.

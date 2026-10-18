@@ -1,0 +1,30 @@
+{
+  "name": "travel-planner",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node --watch server.js",
+    "test": "node --test --test-concurrency=1 test/",
+    "lint": "eslint .",
+    "share": "node scripts/share.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/backup.js --restore"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.8",
+    "express": "^4.22.3",
+    "mongoose": "^9.11.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "mongodb-memory-server": "^11.3.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

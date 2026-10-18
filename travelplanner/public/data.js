@@ -1,0 +1,73 @@
+// Browser-only data: destination pickers and the budget estimate.
+
+export const REGIONS = {
+  "Southeast Asia": {countries:["Thailand","Vietnam","Indonesia","Philippines","Malaysia","Singapore","Cambodia","Laos"]},
+  "East Asia": {countries:["Japan","South Korea","China","Taiwan"]},
+  "South Asia": {countries:["India","Sri Lanka","Nepal","Maldives"]},
+  Europe: {countries:["Italy","France","Spain","Greece","Portugal","United Kingdom","Switzerland","Netherlands"]},
+  "North America": {countries:["USA","Canada","Mexico","Costa Rica"]},
+  "South America": {countries:["Brazil","Peru","Colombia","Argentina"]},
+  "Middle East": {countries:["UAE","Turkey","Jordan","Israel"]},
+  Africa: {countries:["South Africa","Kenya","Morocco","Egypt","Tanzania"]},
+  Oceania: {countries:["Australia","New Zealand","Fiji"]}
+};
+
+export const COUNTRY_FLAGS = {
+  Thailand:"🇹🇭",Vietnam:"🇻🇳",Indonesia:"🇮🇩",Philippines:"🇵🇭",Malaysia:"🇲🇾",
+  Singapore:"🇸🇬",Cambodia:"🇰🇭",Laos:"🇱🇦",Japan:"🇯🇵","South Korea":"🇰🇷",
+  China:"🇨🇳",Taiwan:"🇹🇼",India:"🇮🇳","Sri Lanka":"🇱🇰",Nepal:"🇳🇵",Maldives:"🇲🇻",
+  Italy:"🇮🇹",France:"🇫🇷",Spain:"🇪🇸",Greece:"🇬🇷",Portugal:"🇵🇹",
+  "United Kingdom":"🇬🇧",Switzerland:"🇨🇭",Netherlands:"🇳🇱",
+  USA:"🇺🇸",Canada:"🇨🇦",Mexico:"🇲🇽","Costa Rica":"🇨🇷",
+  Brazil:"🇧🇷",Peru:"🇵🇪",Colombia:"🇨🇴",Argentina:"🇦🇷",
+  UAE:"🇦🇪",Turkey:"🇹🇷",Jordan:"🇯🇴",Israel:"🇮🇱",
+  "South Africa":"🇿🇦",Kenya:"🇰🇪",Morocco:"🇲🇦",Egypt:"🇪🇬",Tanzania:"🇹🇿",
+  Australia:"🇦🇺","New Zealand":"🇳🇿",Fiji:"🇫🇯"
+};
+
+export const DAILY_BUDGET = {
+  "Thailand":     { budget: 1000, midrange: 2500, luxury: 7000 },
+  "Vietnam":      { budget: 500000, midrange: 1500000, luxury: 5000000 },
+  "Indonesia":    { budget: 300000, midrange: 700000, luxury: 2000000 },
+  "Philippines":  { budget: 1500, midrange: 3500, luxury: 10000 },
+  "Malaysia":     { budget: 80, midrange: 180, luxury: 500 },
+  "Singapore":    { budget: 80, midrange: 150, luxury: 400 },
+  "Cambodia":     { budget: 60000, midrange: 150000, luxury: 400000 },
+  "Laos":         { budget: 80000, midrange: 200000, luxury: 600000 },
+  "Japan":        { budget: 8000, midrange: 20000, luxury: 60000 },
+  "South Korea":  { budget: 50000, midrange: 120000, luxury: 350000 },
+  "China":        { budget: 300, midrange: 700, luxury: 2000 },
+  "Taiwan":       { budget: 1000, midrange: 2500, luxury: 7000 },
+  "India":        { budget: 2000, midrange: 5000, luxury: 15000 },
+  "Sri Lanka":    { budget: 5000, midrange: 12000, luxury: 35000 },
+  "Nepal":        { budget: 1500, midrange: 4000, luxury: 12000 },
+  "Maldives":     { budget: 1000, midrange: 2500, luxury: 7000 },
+  "Italy":        { budget: 60, midrange: 130, luxury: 350 },
+  "France":       { budget: 65, midrange: 140, luxury: 380 },
+  "Spain":        { budget: 50, midrange: 110, luxury: 300 },
+  "Greece":       { budget: 50, midrange: 100, luxury: 280 },
+  "Portugal":     { budget: 45, midrange: 90, luxury: 250 },
+  "United Kingdom": { budget: 60, midrange: 130, luxury: 350 },
+  "Switzerland":  { budget: 90, midrange: 200, luxury: 500 },
+  "Netherlands":  { budget: 60, midrange: 130, luxury: 350 },
+  "USA":          { budget: 70, midrange: 150, luxury: 400 },
+  "Canada":       { budget: 65, midrange: 140, luxury: 350 },
+  "Mexico":       { budget: 600, midrange: 1400, luxury: 4000 },
+  "Costa Rica":   { budget: 25000, midrange: 60000, luxury: 180000 },
+  "Brazil":       { budget: 100, midrange: 220, luxury: 600 },
+  "Peru":         { budget: 60, midrange: 140, luxury: 400 },
+  "Colombia":     { budget: 60000, midrange: 150000, luxury: 450000 },
+  "Argentina":    { budget: 15000, midrange: 35000, luxury: 100000 },
+  "UAE":          { budget: 150, midrange: 350, luxury: 900 },
+  "Turkey":       { budget: 500, midrange: 1200, luxury: 3500 },
+  "Jordan":       { budget: 30, midrange: 70, luxury: 180 },
+  "Israel":       { budget: 200, midrange: 450, luxury: 1200 },
+  "South Africa": { budget: 500, midrange: 1200, luxury: 3500 },
+  "Kenya":        { budget: 3000, midrange: 7000, luxury: 20000 },
+  "Morocco":      { budget: 300, midrange: 700, luxury: 2000 },
+  "Egypt":        { budget: 500, midrange: 1200, luxury: 3500 },
+  "Tanzania":     { budget: 40000, midrange: 100000, luxury: 300000 },
+  "Australia":    { budget: 80, midrange: 180, luxury: 450 },
+  "New Zealand":  { budget: 80, midrange: 180, luxury: 450 },
+  "Fiji":         { budget: 80, midrange: 180, luxury: 400 }
+};

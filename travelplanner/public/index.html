@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>WanderWish — Plan trips together</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="stylesheet" href="/style.css">
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script src="/services/cache.js"></script>
+<script src="/services/currency.js"></script>
+<script src="/services/api.js"></script>
+<script src="/visual/icons.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
+<!-- Shared data/helpers (same files the server imports), exposed as globals before app.js runs. -->
+<script type="module" src="/services/globals.js"></script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+
+<!-- Living background: drifting clouds, a plane, birds, a balloon and trees swaying on the hills -->
+<div class="scenery" id="scenery" aria-hidden="true">
+  <div class="sun"></div>
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div><div class="cloud c4"></div>
+  <div class="plane">
+    <svg viewBox="0 0 170 40">
+      <path d="M0 23.5H108" stroke="#fff" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+      <path d="M112 22 L150 20 Q162 20 166 23 Q162 26 150 26 L112 25Z" fill="#6b7a80"/>
+      <path d="M134 22 L122 8 L129 8 L148 22Z" fill="#6b7a80"/>
+      <path d="M134 25 L122 38 L129 38 L148 25Z" fill="#7d8b90"/>
+      <path d="M114 22 L107 13 L112 13 L121 22Z" fill="#6b7a80"/>
+    </svg>
+  </div>
+  <div class="birds">
+    <svg width="64" height="30" viewBox="0 0 64 30" fill="none" stroke="#6b7a80" stroke-width="1.6" stroke-linecap="round">
+      <path d="M2 12 Q8 6 14 12 Q20 6 26 12"/>
+      <path d="M30 4 Q35 0 40 4 Q45 0 50 4"/>
+      <path d="M40 22 Q44 18 48 22 Q52 18 56 22"/>
+    </svg>
+  </div>
+  <div class="balloon">
+    <svg viewBox="0 0 64 96">
+      <path d="M32 2C8 2 2 24 8 40c5 12 16 20 18 26h12c2-6 13-14 18-26C62 24 56 2 32 2Z" fill="#e8623d"/>
+      <path d="M32 2c-10 8-12 38-4 64h8c8-26 6-56-4-64Z" fill="#f4a24b"/>
+      <path d="M27 66v12M37 66v12" stroke="#9a7550" stroke-width="1.5"/>
+      <rect x="25" y="78" width="14" height="10" rx="2" fill="#9a7550"/>
+    </svg>
+  </div>
+  <svg class="hills" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice">
+    <defs>
+      <symbol id="tRound" overflow="visible">
+        <rect x="-3" y="-30" width="6" height="30" rx="2" fill="#8b6b4e"/>
+        <circle cx="0" cy="-50" r="22" fill="#5f9e6e"/><circle cx="-15" cy="-38" r="15" fill="#5f9e6e"/><circle cx="15" cy="-39" r="16" fill="#58956a"/>
+        <circle cx="-6" cy="-57" r="10" fill="#79b585"/>
+      </symbol>
+      <symbol id="tPine" overflow="visible">
+        <rect x="-2.5" y="-12" width="5" height="12" fill="#7d5f45"/>
+        <path d="M0-80 18-42H-18Z M0-62 22-24H-22Z M0-44 26-8H-26Z" fill="#4f8a5f"/>
+      </symbol>
+    </defs>
+    <path d="M0 200C180 150 360 190 520 170s340-50 520-10 260-20 400 10V360H0Z" fill="#dbe7d6"/>
+    <g transform="translate(90 186) scale(.5)"><g class="tree" style="--d:6s"><use href="#tPine"/></g></g>
+    <g transform="translate(122 180) scale(.6)"><g class="tree" style="--d:5.4s;--delay:-1s"><use href="#tPine"/></g></g>
+    <g transform="translate(158 176) scale(.5)"><g class="tree" style="--d:6.4s;--delay:-2s"><use href="#tPine"/></g></g>
+    <g transform="translate(600 166) scale(.55)"><g class="tree" style="--d:5s"><use href="#tRound"/></g></g>
+    <g transform="translate(640 163) scale(.45)"><g class="tree" style="--d:5.8s;--delay:-1.5s"><use href="#tRound"/></g></g>
+    <g transform="translate(990 158) scale(.55)"><g class="tree" style="--d:6s;--delay:-.5s"><use href="#tPine"/></g></g>
+    <g transform="translate(1024 157) scale(.45)"><g class="tree" style="--d:5.2s;--delay:-2.5s"><use href="#tPine"/></g></g>
+    <g transform="translate(1310 172) scale(.5)"><g class="tree" style="--d:5.6s"><use href="#tPine"/></g></g>
+
+    <path d="M0 250c200-40 420 10 640-20s380-30 560 5 200-15 240-5V360H0Z" fill="#c6dcc0"/>
+    <g transform="translate(250 236) scale(.8)"><g class="tree" style="--d:4.6s"><use href="#tRound"/></g></g>
+    <g transform="translate(316 232) scale(.65)"><g class="tree" style="--d:5.2s;--delay:-1.2s"><use href="#tRound"/></g></g>
+    <g transform="translate(760 226) scale(.8)"><g class="tree" style="--d:5.4s;--delay:-.8s"><use href="#tPine"/></g></g>
+    <g transform="translate(800 224) scale(.65)"><g class="tree" style="--d:4.8s;--delay:-2s"><use href="#tPine"/></g></g>
+    <g transform="translate(1130 232) scale(.8)"><g class="tree" style="--d:5s;--delay:-1.6s"><use href="#tRound"/></g></g>
+    <g transform="translate(1390 228) scale(.7)"><g class="tree" style="--d:5.6s"><use href="#tPine"/></g></g>
+
+    <path d="M0 300c240-30 480 10 760-10s420-20 680 5V360H0Z" fill="#b2d0ab"/>
+    <g transform="translate(70 298) scale(1.15)"><g class="tree" style="--d:4.2s">
+      <path d="M0 0Q-4-40 6-78" stroke="#9a7550" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="palm-top" style="--d:3.6s"><path d="M6-78Q-20-94-42-70-18-82 6-78ZM6-78Q32-96 54-72 28-84 6-78ZM6-78Q-14-70-30-44-8-66 6-78ZM6-78Q28-68 42-44 20-66 6-78ZM6-78Q2-100-8-110 12-98 6-78Z" fill="#5aa06a"/></g>
+    </g></g>
+    <g transform="translate(150 296) scale(.9)"><g class="tree" style="--d:4.8s;--delay:-1.3s">
+      <path d="M0 0Q6-36-4-74" stroke="#9a7550" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="palm-top" style="--d:4s;--delay:-1s"><path d="M-4-74Q-30-90-50-66-28-78-4-74ZM-4-74Q22-92 44-68 18-80-4-74ZM-4-74Q-24-66-38-40-18-62-4-74ZM-4-74Q18-64 32-40 10-62-4-74Z" fill="#4f9562"/></g>
+    </g></g>
+    <g transform="translate(480 296) scale(1.1)"><g class="tree" style="--d:5s;--delay:-.4s"><use href="#tRound"/></g></g>
+    <g transform="translate(905 290) scale(1.2)"><g class="tree" style="--d:4.4s;--delay:-2.2s"><use href="#tRound"/></g></g>
+    <g transform="translate(960 290) scale(.85)"><g class="tree" style="--d:5.6s;--delay:-1s"><use href="#tPine"/></g></g>
+    <g transform="translate(1310 298) scale(1.2)"><g class="tree" style="--d:4.4s;--delay:-.7s">
+      <path d="M0 0Q-6-42 4-82" stroke="#9a7550" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="palm-top" style="--d:3.8s;--delay:-.6s"><path d="M4-82Q-22-98-44-74-20-86 4-82ZM4-82Q30-100 52-76 26-88 4-82ZM4-82Q-16-74-32-48-10-70 4-82ZM4-82Q26-72 40-48 18-70 4-82ZM4-82Q0-104-10-114 10-102 4-82Z" fill="#5aa06a"/></g>
+    </g></g>
+    <g transform="translate(1392 300) scale(.95)"><g class="tree" style="--d:5s;--delay:-2s">
+      <path d="M0 0Q5-38-5-76" stroke="#9a7550" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="palm-top" style="--d:4.2s;--delay:-1.8s"><path d="M-5-76Q-30-92-50-68-28-80-5-76ZM-5-76Q22-94 44-70 18-82-5-76ZM-5-76Q-24-68-38-42-18-64-5-76ZM-5-76Q18-66 32-42 10-64-5-76Z" fill="#4f9562"/></g>
+    </g></g>
+  </svg>
+</div>
+<div id="toastContainer"></div>
+
+<div id="app" v-cloak>
+
+  <!-- Header -->
+  <header class="hdr" v-if="booted">
+    <a class="logo" href="/" @click.prevent="go('/')">
+      <span class="logo-mark" v-html="icon('compass', 16)"></span>
+      <span>Wander<em>Wish</em></span>
+    </a>
+    <nav class="hdr-nav" v-if="sessionUser && !sessionUser.needsUsername">
+      <a class="hdr-link" :class="{ active: view === 'planner' }" href="/plan" @click.prevent="go('/plan')">Plan</a>
+      <a class="hdr-link" :class="{ active: view === 'trips' }" href="/my-trips" @click.prevent="go('/my-trips')">My trips</a>
+    </nav>
+    <div class="hdr-right">
+      <template v-if="!sessionUser">
+        <a class="btn btn-ghost btn-sm" href="/login" @click.prevent="go('/login')" v-if="view !== 'login'">Sign in</a>
+        <a class="btn btn-primary btn-sm" href="/signup" @click.prevent="go('/signup')" v-if="view !== 'signup'">Get started</a>
+      </template>
+      <div class="user-menu" v-else @click.stop="userMenuOpen = !userMenuOpen">
+        <span class="avatar">{{ initial(sessionUser) }}</span>
+        <span class="uname">{{ sessionUser.username || sessionUser.name }}</span>
+        <div class="dropdown" v-if="userMenuOpen">
+          <a href="/plan" @click.prevent="go('/plan')">New trip</a>
+          <a href="/my-trips" @click.prevent="go('/my-trips')">My trips</a>
+          <a href="#" @click.prevent="logout">Sign out</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="boot" v-if="!booted"><span class="spinner"></span></div>
+
+  <!-- ═══ LANDING (signed out) ═══ -->
+  <main class="landing page" v-if="view === 'landing'">
+    <section class="hero">
+      <div class="eyebrow rise" style="--i:0"><span class="dot"></span> Group trip planning, reimagined</div>
+      <h1 class="hero-title">
+        <span class="w" style="--i:0">Plan</span> <span class="w" style="--i:1">the</span> <span class="w" style="--i:2">trip.</span><br>
+        <span class="w" style="--i:3"><em class="grad-text">Together.</em></span>
+      </h1>
+      <p class="hero-sub rise" style="--i:6">Pick a country and your vibe. WanderWish builds a day-by-day itinerary on a live map, then you invite your crew with a link or a one-time code.</p>
+      <div class="hero-cta rise" style="--i:8">
+        <a class="btn btn-grad btn-lg" href="/signup" @click.prevent="go('/signup')">Start planning — it's free <span class="arrow" v-html="icon('arrow-right', 16)"></span></a>
+        <a class="btn btn-ghost btn-lg" href="/login" @click.prevent="go('/login')">I have an account</a>
+      </div>
+      <div class="hero-code rise" style="--i:10">Got an invite code? <a href="/login" @click.prevent="go('/login')">Sign in to join</a></div>
+      <div class="marquee rise" style="--i:12">
+        <div class="marquee-track">
+          <span class="m-chip" v-for="c in marqueeCountries"><img :src="flagUrl(c)" alt="" loading="lazy"> {{ c }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head" data-reveal>
+        <h2>Everything in <em class="serif grad-text">one view</em></h2>
+        <p>Your itinerary on the left, your route on the right. No more tab-juggling.</p>
+      </div>
+      <div class="glass preview" data-reveal>
+        <div class="preview-inner">
+          <div class="pv-list">
+            <div class="pv-day" v-for="(d, i) in previewDays" :style="{ '--i': i }">
+              <b>Day {{ i + 1 }}</b> <span class="muted">— {{ d }}</span>
+              <div class="pv-line" style="width:80%"></div><div class="pv-line" style="width:55%"></div>
+            </div>
+          </div>
+          <div class="pv-map">
+            <svg viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+              <path class="pv-route" d="M60 220 C 120 120, 180 260, 230 150 S 330 60, 350 110" fill="none" stroke="#ff9a6b" stroke-width="3"/>
+              <path class="pv-route" d="M90 80 C 150 60, 200 120, 260 90" fill="none" stroke="#c17bff" stroke-width="3"/>
+            </svg>
+            <span class="pv-pin" style="left:13%;top:70%;background:#ff9a6b;animation-delay:.2s">1</span>
+            <span class="pv-pin" style="left:55%;top:46%;background:#ff9a6b;animation-delay:.4s">2</span>
+            <span class="pv-pin" style="left:85%;top:33%;background:#ff9a6b;animation-delay:.6s">3</span>
+            <span class="pv-pin" style="left:20%;top:23%;background:#c17bff;animation-delay:.8s">4</span>
+            <span class="pv-pin" style="left:63%;top:27%;background:#c17bff;animation-delay:1s">5</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:20px">
+      <div class="features">
+        <div class="glass glow feature" data-reveal style="--i:0">
+          <span class="num">01</span>
+          <div class="feature-ico" v-html="icon('compass', 20)"></div>
+          <h3>Instant itineraries</h3>
+          <p>Real places, real routes, weather-aware days, and a budget estimate, generated in seconds.</p>
+        </div>
+        <div class="glass glow feature" data-reveal style="--i:1">
+          <span class="num">02</span>
+          <div class="feature-ico" v-html="icon('link', 20)"></div>
+          <h3>Invite with a link or code</h3>
+          <p>Share a join link, or read out a one-time 6-letter code. Friends sign in and they're in.</p>
+        </div>
+        <div class="glass glow feature" data-reveal style="--i:2">
+          <span class="num">03</span>
+          <div class="feature-ico" v-html="icon('map', 20)"></div>
+          <h3>Edit together, live</h3>
+          <p>Reorder stops, move them between days, leave notes. Everyone sees changes as they happen.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="glass cta-final" data-reveal style="max-width:1100px;margin-inline:auto">
+      <h2>Where to <em class="grad-text">next?</em></h2>
+      <p class="muted" style="margin:14px 0 28px">Create an account and plan your first trip in under a minute.</p>
+      <a class="btn btn-grad btn-lg" href="/signup" @click.prevent="go('/signup')">Create free account <span class="arrow" v-html="icon('arrow-right', 16)"></span></a>
+    </section>
+    <footer class="footer">WanderWish · Built for wanderers</footer>
+  </main>
+
+  <!-- ═══ LOGIN ═══ -->
+  <main class="auth-wrap page" v-if="view === 'login'">
+    <form class="glass auth-card" @submit.prevent="loginAction">
+      <h1>Welcome <em>back</em></h1>
+      <p class="sub">{{ next.startsWith('/join/') ? 'Sign in to join the trip you were invited to.' : 'Sign in to see your trips.' }}</p>
+      <div class="alert" v-if="authError">{{ authError }}</div>
+      <div class="field">
+        <label for="li-login">Username or email</label>
+        <input id="li-login" class="input" type="text" v-model="authLogin" autocomplete="username" autofocus>
+      </div>
+      <div class="field">
+        <label for="li-pw">Password</label>
+        <input id="li-pw" class="input" type="password" v-model="authPassword" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-lg w-100" type="submit" :disabled="authLoading">
+        <span v-if="authLoading" class="spinner"></span> Sign in
+      </button>
+      <p class="auth-switch">New here? <a @click="go('/signup' + nextQuery)">Create an account</a></p>
+    </form>
+  </main>
+
+  <!-- ═══ SIGNUP ═══ -->
+  <main class="auth-wrap page" v-if="view === 'signup'">
+    <form class="glass auth-card" @submit.prevent="registerAction">
+      <h1>Start <em class="grad-text">wandering</em></h1>
+      <p class="sub">Free, and it takes 30 seconds.</p>
+      <div class="alert" v-if="authError">{{ authError }}</div>
+      <div class="field" :class="{ valid: usernameAvailable === true, invalid: usernameAvailable === false }">
+        <label for="su-user">Username</label>
+        <input id="su-user" class="input" type="text" v-model="authUsername" @input="checkUsernameDebounced" maxlength="20" autocomplete="off">
+        <div class="hint ok" v-if="usernameAvailable === true">Available</div>
+        <div class="hint err" v-if="usernameAvailable === false">Username taken</div>
+        <div class="hint err" v-if="authUsername && !/^[a-zA-Z0-9_]*$/.test(authUsername)">Letters, numbers and underscores only</div>
+      </div>
+      <div class="field">
+        <label for="su-email">Email</label>
+        <input id="su-email" class="input" type="email" v-model="authEmail" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="su-name">Display name</label>
+        <input id="su-name" class="input" type="text" v-model="authName" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="su-pw">Password</label>
+        <input id="su-pw" class="input" type="password" v-model="authPassword" autocomplete="new-password">
+        <div class="hint" v-if="authPassword && authPassword.length < 6">At least 6 characters</div>
+      </div>
+      <button class="btn btn-grad btn-lg w-100" type="submit" :disabled="authLoading">
+        <span v-if="authLoading" class="spinner"></span> Create account
+      </button>
+      <p class="auth-switch">Already have an account? <a @click="go('/login' + nextQuery)">Sign in</a></p>
+    </form>
+  </main>
+
+  <!-- ═══ NEED USERNAME ═══ -->
+  <main class="auth-wrap page" v-if="view === 'need-username'">
+    <form class="glass auth-card" @submit.prevent="setUsernameAction">
+      <h1>Pick a <em>username</em></h1>
+      <p class="sub">Friends use it to add you to trips.</p>
+      <div class="alert" v-if="authError">{{ authError }}</div>
+      <div class="field" :class="{ valid: usernameAvailable === true, invalid: usernameAvailable === false }">
+        <label for="nu-user">Username</label>
+        <input id="nu-user" class="input" type="text" v-model="authUsername" @input="checkUsernameDebounced" maxlength="20">
+        <div class="hint ok" v-if="usernameAvailable === true">Available</div>
+        <div class="hint err" v-if="usernameAvailable === false">Username taken</div>
+      </div>
+      <button class="btn btn-primary btn-lg w-100" type="submit" :disabled="!usernameAvailable">Continue</button>
+    </form>
+  </main>
+
+  <!-- ═══ PLANNER (home when signed in) ═══ -->
+  <main class="home page" v-if="view === 'planner'">
+    <div class="home-head">
+      <h1 class="rise">Where are we <em class="grad-text">going</em>, {{ firstName }}?</h1>
+      <p class="rise" style="--i:1">Set the basics. We'll handle the rest.</p>
+    </div>
+    <div class="home-grid">
+      <form class="glass glow planner rise" style="--i:2" @submit.prevent="generate">
+        <div class="dest-preview mystery" v-if="isSurprise" key="surprise">
+          <div class="mystery-dice">🎲</div>
+          <div class="cap">Somewhere in {{ state.region || 'the world' }}<small>We'll reveal it when your itinerary is ready</small></div>
+        </div>
+        <div class="dest-preview" v-else-if="state.country" :key="state.country">
+          <div class="mesh" :style="destStyle(state.country)"></div>
+          <img class="cover-img" v-if="cover(state.country)" :src="cover(state.country)" alt="">
+          <div class="cap"><img class="cover-flag" :src="flagUrl(state.country)" alt=""> {{ state.country }}</div>
+        </div>
+        <div class="dest-pick">
+          <div class="field">
+            <label for="pl-region">Region</label>
+            <select id="pl-region" class="select" v-model="state.region" @change="state.country = ''">
+              <option value="">Anywhere</option>
+              <option v-for="(info, r) in regions" :value="r">{{ r }}</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pl-country">Country</label>
+            <select id="pl-country" class="select" v-model="state.country">
+              <option value="">Choose a country</option>
+              <option :value="SURPRISE">🎲 Surprise me{{ state.region ? ' (' + state.region + ')' : '' }}</option>
+              <option v-for="c in allCountries" :value="c">{{ c }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="row-3">
+          <div class="field">
+            <span class="label">Days</span>
+            <div class="stepper">
+              <button type="button" @click="state.days = Math.max(1, state.days - 1)" aria-label="Fewer days">−</button>
+              <span>{{ state.days }}</span>
+              <button type="button" @click="state.days = Math.min(14, state.days + 1)" aria-label="More days">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pl-start">Start date</label>
+            <input id="pl-start" type="date" class="input" v-model="state.startDate">
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Budget</span>
+          <div class="chips">
+            <span class="chip" v-for="b in budgetOptions" :class="{ on: state.budget === b.value }" @click="state.budget = b.value">{{ b.label }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Pace</span>
+          <div class="chips">
+            <span class="chip" v-for="p in paceOptions" :class="{ on: state.pace === p.value }" @click="state.pace = p.value">{{ p.label }}</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Interests</span>
+          <div class="chips">
+            <span class="chip" v-for="t in typeOptions" :class="{ on: state.types.includes(t.value) }" @click="toggleType(t.value)">{{ t.label }}</span>
+          </div>
+        </div>
+        <button class="btn btn-grad btn-lg w-100" type="submit" :disabled="generating" style="margin-top:8px">
+          <span class="spinner" v-if="generating"></span>
+          {{ generating ? 'Building your itinerary…' : 'Generate itinerary' }}
+          <span class="arrow" v-if="!generating" v-html="icon('arrow-right', 16)"></span>
+        </button>
+      </form>
+
+      <div class="side-stack">
+        <form class="glass glow side-card rise" style="--i:3" @submit.prevent="joinWithCode">
+          <h3>Join a friend's trip</h3>
+          <p>Enter the 6-character code they shared.</p>
+          <div class="code-input">
+            <input class="input" v-model="joinCode" placeholder="K7PQ2X" maxlength="7" aria-label="Invite code">
+            <button class="btn btn-primary" type="submit" :disabled="normalizedJoinCode.length !== 6">Join</button>
+          </div>
+        </form>
+        <div class="glass side-card rise" style="--i:4">
+          <h3>Recent trips</h3>
+          <p v-if="!userTrips.length">Nothing yet. Your trips will show up here.</p>
+          <div style="margin-top:12px" v-else>
+            <div class="mini-trip" v-for="t in userTrips.slice(0, 4)" @click="go('/trip/' + t.id)">
+              <div class="thumb"><div class="mesh" :style="destStyle(t.country)"></div><img class="cover-img" v-if="cover(t.country)" :src="cover(t.country)" alt="" loading="lazy"><img class="cover-flag" :src="flagUrl(t.country)" alt=""></div>
+              <div>
+                <div class="t">{{ t.title }}</div>
+                <div class="s">{{ t.days }} days · {{ t.role === 'owner' ? 'Yours' : 'Shared · ' + t.role }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ TRIP: itinerary | map ═══ -->
+  <main class="trip page" :class="{ 'show-map': mobileTab === 'map' }" v-if="view === 'trip'">
+    <section class="trip-panel" ref="panel">
+      <div class="trip-hero">
+        <div class="mesh bg" v-if="state.country" :style="destStyle(state.country)"></div>
+        <img class="cover-img bg" v-if="cover(state.country)" :src="cover(state.country)" alt="">
+        <a class="photo-credit" v-if="coverCredit(state.country)" :href="coverCredit(state.country).url" target="_blank" rel="noopener">Photo: {{ coverCredit(state.country).name }} · Wikipedia</a>
+        <h1 class="trip-title">
+          {{ tripTitle || state.country }}
+          <button class="btn-icon btn" v-if="currentRole === 'owner'" @click="editTitle" title="Rename" v-html="icon('edit', 14)"></button>
+        </h1>
+        <div class="trip-meta">
+          <span class="tag"><img :src="flagUrl(state.country)" class="flag" alt=""> {{ state.country }}</span>
+          <span class="tag surprise-tag" v-if="surpriseCountry && surpriseCountry === state.country">🎲 Surprise pick</span>
+          <span class="tag" v-html="badge('clock', state.days + ' days')"></span>
+          <label class="tag date-tag" v-if="canEdit" title="Change the start date">Starts <input type="date" :value="tripStartDate" @change="setStartDate($event.target.value)" aria-label="Trip start date"></label>
+          <span class="tag" v-else-if="tripStartDate">Starts {{ fmtDate(tripStartDate) }}</span>
+          <span class="tag" v-html="badge('wallet', budgetLabel)"></span>
+          <span class="tag" v-html="badge('walk', paceLabel)"></span>
+          <span class="tag" v-if="currentRole && currentRole !== 'owner'">You're a {{ currentRole }}</span>
+        </div>
+        <div class="trip-actions">
+          <div class="avatar-stack" v-if="members.length">
+            <span class="avatar" v-for="m in members.slice(0, 5)" :title="'@' + (m.username || m.name) + ' · ' + m.role">{{ initial(m) }}</span>
+          </div>
+          <button class="btn btn-grad btn-sm" v-if="currentRole === 'owner'" @click="openShare"><span v-html="icon('share', 14)"></span> Invite</button>
+          <button class="btn btn-ghost btn-sm" v-else-if="currentTripId" @click="openShare">Members</button>
+          <button class="btn btn-ghost btn-sm" v-if="canEdit && plans.length" @click="regenerate" :disabled="generating">Regenerate</button>
+        </div>
+        <div class="trip-edited" v-if="tripLastEditedBy">Last edited {{ timeAgo(tripLastEditedAt) }} by @{{ tripLastEditedBy }}</div>
+      </div>
+
+      <div class="tabs panel-tabs" v-if="currentTripId">
+        <button :class="{ on: panelTab === 'plan' }" @click="panelTab = 'plan'"><span v-html="icon('map', 14)"></span> Itinerary</button>
+        <button :class="{ on: panelTab === 'money' }" @click="panelTab = 'money'"><span v-html="icon('receipt', 14)"></span> Split costs <span class="count" v-if="expenses.length">{{ expenses.length }}</span></button>
+        <button :class="{ on: panelTab === 'activity' }" @click="panelTab = 'activity'; refreshActivity()"><span v-html="icon('clock', 14)"></span> Activity</button>
+      </div>
+
+      <!-- ═══ ACTIVITY FEED ═══ -->
+      <div v-if="panelTab === 'activity'" class="glass feed page">
+        <p class="muted" style="font-size:14px" v-if="!activity.length">No activity yet.</p>
+        <div class="feed-row" v-for="a in activity" :key="a.id">
+          <span class="avatar sm">{{ initial(a) }}</span>
+          <div><b>{{ isMe(a.user_id) ? 'You' : '@' + (a.username || a.name || 'someone') }}</b> {{ a.summary }}<div class="feed-time">{{ timeAgo(a.created_at) }}</div></div>
+        </div>
+      </div>
+
+      <!-- ═══ SPLIT COSTS ═══ -->
+      <div v-if="panelTab === 'money'" class="money page">
+        <div class="stats">
+          <div class="glass stat" v-for="(amt, cur) in expenseTotals" :key="cur">
+            <div class="k">Group spent · {{ cur }}</div>
+            <div class="v">{{ money(amt, cur) }}</div>
+          </div>
+          <div class="glass stat" v-if="!expenses.length">
+            <div class="k">Group spent</div>
+            <div class="v">—</div>
+          </div>
+        </div>
+
+        <div class="glass settle">
+          <div class="settle-head">
+            <h3>Settle up</h3>
+            <span class="muted">Fewest payments to even everyone out</span>
+          </div>
+          <p class="muted" style="font-size:14px" v-if="!expenses.length">Log what each person paid during the trip. At the end, this shows exactly who pays whom.</p>
+          <template v-for="(st, cur) in settlement" :key="cur">
+            <div class="transfer" v-for="t in st.transfers">
+              <span class="avatar sm">{{ memberName(t.from).charAt(1).toUpperCase() }}</span>
+              <span><b :class="{ me: isMe(t.from) }">{{ isMe(t.from) ? 'You' : memberName(t.from) }}</b> {{ isMe(t.from) ? 'pay' : 'pays' }} <b :class="{ me: isMe(t.to) }">{{ isMe(t.to) ? 'you' : memberName(t.to) }}</b></span>
+              <span class="amt">{{ money(t.amount, cur) }}</span>
+            </div>
+          </template>
+          <div class="alert ok" style="margin:6px 0 0" v-if="expenses.length && !anyTransfers">All square — nobody owes anything.</div>
+          <div class="balances" v-if="expenses.length">
+            <div class="bal" v-for="m in members" :key="m.id">
+              <span class="avatar sm">{{ initial(m) }}</span>
+              <span class="n">{{ isMe(m.id) ? 'You' : '@' + (m.username || m.name) }}</span>
+              <span v-for="(st, cur) in settlement" :key="cur" class="bal-amt" :class="{ pos: (st.balances[m.id] || 0) > 0.004, neg: (st.balances[m.id] || 0) < -0.004 }">{{ balanceText(st.balances[m.id] || 0, cur) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-grad w-100" v-if="!expenseForm" @click="newExpense"><span v-html="icon('plus', 16)"></span> Add an expense</button>
+        <form class="glass expense-form" v-else @submit.prevent="saveExpense">
+          <div class="field">
+            <label for="ex-desc">What was it?</label>
+            <input id="ex-desc" class="input" v-model="expenseForm.description" placeholder="Dinner at the night market" maxlength="120">
+          </div>
+          <div class="row-3">
+            <div class="field">
+              <label for="ex-amt">Amount</label>
+              <div class="amount-row">
+                <select class="select" v-model="expenseForm.currency" aria-label="Currency"><option v-for="c in tripCurrencies" :value="c">{{ c }}</option></select>
+                <input id="ex-amt" class="input" type="number" inputmode="decimal" min="0.01" step="0.01" v-model="expenseForm.amount" placeholder="0.00">
+              </div>
+            </div>
+            <div class="field">
+              <label for="ex-paid">Paid by</label>
+              <select id="ex-paid" class="select" v-model.number="expenseForm.paidBy">
+                <option v-for="m in members" :value="m.id">{{ isMe(m.id) ? 'You' : '@' + (m.username || m.name) }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Split between · {{ expenseForm.splitAmong.length }}</span>
+            <div class="chips">
+              <span class="chip" v-for="m in members" :class="{ on: expenseForm.splitAmong.includes(m.id) }" @click="toggleSplit(m.id)">{{ isMe(m.id) ? 'You' : '@' + (m.username || m.name) }}</span>
+            </div>
+            <div class="hint" v-if="expenseForm.amount > 0">{{ money(expenseForm.amount / expenseForm.splitAmong.length, expenseForm.currency) }} each</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" type="submit" :disabled="!expenseForm.description.trim() || !(expenseForm.amount > 0)">Add expense</button>
+            <button class="btn btn-ghost" type="button" @click="expenseForm = null">Cancel</button>
+          </div>
+        </form>
+
+        <div class="section-label" v-if="expenses.length"><h2>Expenses</h2><span class="muted" style="font-size:12px">{{ expenses.length }}</span></div>
+        <div class="glass expense" v-for="e in expenses" :key="e.id">
+          <div class="exp-ico" v-html="icon('receipt', 16)"></div>
+          <div class="exp-body">
+            <div class="t">{{ e.description }}</div>
+            <div class="s">{{ isMe(e.paid_by) ? 'You' : memberName(e.paid_by) }} paid · split {{ e.split_among.length }} way{{ e.split_among.length === 1 ? '' : 's' }} · {{ timeAgo(e.created_at) }}</div>
+          </div>
+          <div class="exp-amt">{{ money(e.amount, e.currency) }}</div>
+          <button class="btn btn-icon" v-if="canDeleteExpense(e)" @click="deleteExpense(e)" title="Delete expense" v-html="icon('x', 14)"></button>
+        </div>
+      </div>
+
+      <!-- ═══ ITINERARY ═══ -->
+      <template v-if="panelTab === 'plan'">
+      <div class="stats" v-if="budget">
+        <div class="glass stat">
+          <div class="k">Per day</div>
+          <div class="v">~{{ budget.perDay.toLocaleString() }} <small>SGD</small></div>
+        </div>
+        <div class="glass stat">
+          <div class="k">Trip total</div>
+          <div class="v">~{{ budget.total.toLocaleString() }} <small>SGD</small></div>
+        </div>
+      </div>
+      <div class="glass stat" v-if="budget" style="margin-bottom:12px">
+        <div class="k">Where it goes{{ budget.note }}</div>
+        <div class="budget-bar"><span v-for="b in budget.breakdown" :style="{ flex: b.pct, background: b.color }"></span></div>
+        <div class="budget-legend"><span v-for="b in budget.breakdown"><i :style="{ background: b.color }"></i>{{ b.label }} ~{{ b.value }}</span></div>
+      </div>
+      <div class="weather" v-if="plans.some(d => d.weather)">
+        <div class="wday" v-for="d in plans.filter(d => d.weather)" :title="d.weather.label">
+          <span>D{{ d.day }}</span>
+          <span v-html="icon(weatherIcon(d.weather.weatherCode), 18)"></span>
+          <b>{{ Math.round(d.weather.tempMax) }}°</b>
+          <span>{{ Math.round(d.weather.tempMin) }}°</span>
+        </div>
+      </div>
+
+      <div class="section-label"><h2>Itinerary</h2><span class="muted" style="font-size:12px" v-if="plans.length">{{ totalStops }} stops</span></div>
+
+      <div v-if="generating">
+        <div class="glass gen-status"><span class="spinner"></span> Finding places, checking the weather, plotting routes…</div>
+        <div class="skel" v-for="n in 4" :style="{ animationDelay: n * 120 + 'ms' }"></div>
+      </div>
+      <div v-if="generateError" class="gen-error">
+        <strong>Couldn't build this itinerary.</strong> {{ generateError }}
+        <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" @click="go('/plan')">Back to planner</button></div>
+      </div>
+
+      <article v-for="(day, di) in plans" :key="day.day" class="glass day" :class="{ open: day.open }" :style="{ '--i': di }">
+        <div class="day-head" @click="toggleDay(day)">
+          <div class="day-num" :style="{ background: dayColor(day.day) }">{{ day.day }}</div>
+          <div>
+            <div class="t">{{ day.theme }}</div>
+            <div class="s">
+              <span v-if="day.date">{{ fmtDate(day.date) }}</span>
+              <span v-if="day.weather" v-html="icon(weatherIcon(day.weather.weatherCode), 13)"></span>
+              <span v-if="day.weather">{{ Math.round(day.weather.tempMax) }}°</span>
+              <span>· {{ dayStops(day) }} stops</span>
+            </div>
+          </div>
+          <span class="chev" v-html="icon('arrow-down', 16)"></span>
+        </div>
+        <div class="day-body" v-if="day.open">
+          <template v-for="slot in slotNames">
+            <template v-if="day.slots && day.slots[slot] && day.slots[slot].length">
+              <div class="slot-label">{{ slotLabels[slot] }}</div>
+              <template v-for="(act, ai) in day.slots[slot]" :key="actKey(act)">
+                <!-- How to get here from the previous stop -->
+                <div class="leg" v-if="legInfo[actKey(act)] && prevStop(day, slot, ai)" :class="{ loading: legInfo[actKey(act)].loading }">
+                  <span class="leg-ico" :style="{ color: dayColor(day.day) }" v-html="icon(modeMeta(legInfo[actKey(act)].mode).icon, 14)"></span>
+                  <span class="leg-time">{{ legInfo[actKey(act)].approx ? '~' : '' }}{{ legInfo[actKey(act)].min }} min · {{ legInfo[actKey(act)].km }} km</span>
+                  <span class="leg-line" v-if="legInfo[actKey(act)].line">{{ legInfo[actKey(act)].line }}</span>
+                  <span class="leg-warn" v-if="legInfo[actKey(act)].fallback">No public transport data here, so this shows the road route</span>
+                  <select class="leg-mode" v-if="canEdit" :value="act.travelMode || legInfo[actKey(act)].requested || legInfo[actKey(act)].mode" @change="setLegMode(act, $event.target.value)" aria-label="How to travel to this stop">
+                    <option v-for="m in travelModes" :value="m.value">{{ m.label }}</option>
+                  </select>
+                  <span class="leg-label" v-else>{{ modeMeta(legInfo[actKey(act)].mode).label }}</span>
+                </div>
+                <div class="act" :class="{ active: activeAct === act._globalIdx }" :data-act-idx="act._globalIdx" @click="focusActivity(act._globalIdx)">
+                  <div class="act-num" :style="{ background: dayColor(day.day) }">{{ dayActNum(day.day, slot, ai) }}</div>
+                  <div class="act-body">
+                    <div class="act-title">{{ act.title }} <span class="pinned-tag" v-if="act.custom">Pinned</span></div>
+                    <div class="act-local" v-if="act.localName">{{ act.localName }}</div>
+                    <div class="act-desc">{{ shortDesc(act) }} <a class="desc-src" v-if="act.descUrl" :href="act.descUrl" target="_blank" rel="noopener" @click.stop>Wikipedia</a></div>
+                    <div class="act-note" v-if="act.note">{{ act.note }}</div>
+                    <div class="act-tags">
+                      <span class="tag" v-if="act.dur" v-html="badge('clock', act.dur)"></span>
+                      <span class="tag" v-if="act.cost" v-html="badge('wallet', act.cost)"></span>
+                      <button class="tag tag-btn" :class="{ on: openThread === actKey(act) }" @click.stop="toggleThread(act)">
+                        <span v-html="icon('message', 13)"></span> {{ commentLabel(act) }}
+                      </button>
+                    </div>
+                    <div class="thread" v-if="(commentsByAct[actKey(act)] || []).length || openThread === actKey(act)" @click.stop>
+                      <div class="cmt" v-for="c in commentsByAct[actKey(act)]" :key="c.id">
+                        <span class="avatar sm">{{ initial(c) }}</span>
+                        <div class="cmt-body">
+                          <div class="cmt-meta"><b>{{ isMe(c.user_id) ? 'You' : '@' + (c.username || c.name) }}</b> · {{ timeAgo(c.created_at) }}</div>
+                          <div class="cmt-text">{{ c.text }}</div>
+                        </div>
+                        <button class="btn btn-icon xs" v-if="isMe(c.user_id) || currentRole === 'owner'" @click="deleteComment(c)" title="Delete comment" v-html="icon('x', 12)"></button>
+                      </div>
+                      <form class="cmt-form" v-if="openThread === actKey(act)" @submit.prevent="postComment(act)">
+                        <span class="avatar sm">{{ initial(sessionUser) }}</span>
+                        <input class="input input-sm" v-model="commentDraft[actKey(act)]" placeholder="Add your comment…" maxlength="500" aria-label="Your comment">
+                        <button class="btn btn-primary btn-sm" type="submit" :disabled="!(commentDraft[actKey(act)] || '').trim()" title="Post" v-html="icon('send', 14)"></button>
+                      </form>
+                    </div>
+                    <div class="act-tools" v-if="canEdit" @click.stop>
+                      <button class="btn btn-icon" v-if="ai > 0" @click="moveAct(day.day, slot, ai, -1)" title="Move up" v-html="icon('arrow-up', 14)"></button>
+                      <button class="btn btn-icon" v-if="ai < day.slots[slot].length - 1" @click="moveAct(day.day, slot, ai, 1)" title="Move down" v-html="icon('arrow-down', 14)"></button>
+                      <select class="select select-sm" style="width:auto" @change="moveToDay(day.day, slot, ai, parseInt($event.target.value))" aria-label="Move to day">
+                        <option value="">Move to…</option>
+                        <template v-for="od in plans"><option v-if="od.day !== day.day" :value="od.day">Day {{ od.day }}</option></template>
+                      </select>
+                      <button class="btn btn-icon" @click="editNote(act)" title="Shared note" v-html="icon('note', 14)"></button>
+                      <button class="btn btn-icon" @click="removeAct(day.day, slot, ai)" title="Remove" v-html="icon('x', 14)"></button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </template>
+          </template>
+          <form class="add-place" v-if="canEdit" @submit.prevent="startPin(day.day)">
+            <input class="input input-sm" placeholder="Name a place to add, e.g. Aunt May's café" v-model="pinDraft[day.day]" maxlength="80">
+            <button class="btn btn-ghost btn-sm" type="submit" :disabled="!(pinDraft[day.day] || '').trim()"><span v-html="icon('map-pin', 14)"></span> Pin on map</button>
+          </form>
+        </div>
+      </article>
+      </template>
+    </section>
+
+    <section class="trip-mapwrap">
+      <div class="trip-map" :class="{ pinning: pinMode }">
+        <div id="tripMap"></div>
+        <div class="map-empty" v-if="!hasCoords && !generating && plans.length">No map available for this itinerary.</div>
+        <div class="pin-banner" v-if="pinMode">
+          <span>Click the map to pin “{{ pinMode.name }}” to Day {{ pinMode.day }}</span>
+          <button class="btn" @click="cancelPin">Cancel</button>
+        </div>
+        <div class="map-top" v-if="hasCoords && !pinMode">
+          <span class="map-day" :class="{ on: showLandmarks }" @click="showLandmarks = !showLandmarks"><span v-html="icon('flag', 12)"></span> Landmark names</span>
+        </div>
+        <div class="map-days" v-if="plans.length > 1 && hasCoords">
+          <span class="map-day" :class="{ on: focusedDay === null }" @click="focusDay(null)">All days</span>
+          <span class="map-day" v-for="d in plans" :class="{ on: focusedDay === d.day }" @click="focusDay(d.day)"><i :style="{ background: dayColor(d.day) }"></i>Day {{ d.day }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="view-toggle">
+      <button :class="{ on: mobileTab === 'list' }" @click="setMobileTab('list')"><span v-html="icon('menu', 14)"></span> Itinerary</button>
+      <button :class="{ on: mobileTab === 'map' }" @click="setMobileTab('map')"><span v-html="icon('map', 14)"></span> Map</button>
+    </div>
+  </main>
+
+  <!-- ═══ MY TRIPS ═══ -->
+  <main class="trips-page page" v-if="view === 'trips'">
+    <div class="home-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <h1 class="rise">Your <em class="grad-text">trips</em></h1>
+      <button class="btn btn-grad" @click="go('/plan')"><span v-html="icon('plus', 16)"></span> New trip</button>
+    </div>
+    <div class="empty" v-if="tripsLoaded && !userTrips.length">
+      <h3>No trips yet</h3>
+      <p>Plan one, or join a friend's with their invite code.</p>
+    </div>
+    <div class="trips-grid">
+      <div class="glass trip-card" v-for="(t, i) in userTrips" :key="t.id" :style="{ '--i': i }" @click="go('/trip/' + t.id)">
+        <div class="cover">
+          <div class="mesh" :style="destStyle(t.country)"></div>
+          <img class="cover-img" v-if="cover(t.country)" :src="cover(t.country)" alt="" loading="lazy">
+          <span class="tag role">{{ t.role === 'owner' ? 'Owner' : t.role }}</span>
+        </div>
+        <div class="body">
+          <h3>{{ t.title }}</h3>
+          <div class="s"><img :src="flagUrl(t.country)" class="flag" alt=""> {{ t.country }} · {{ t.days }} days</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ JOIN VIA INVITE ═══ -->
+  <main class="auth-wrap page" v-if="view === 'join'">
+    <div class="glass join-card" v-if="invite">
+      <div class="cover"><div class="mesh" :style="destStyle(invite.trip.country)"></div><img class="cover-img" v-if="cover(invite.trip.country)" :src="cover(invite.trip.country)" alt=""></div>
+      <div class="body">
+        <p class="muted" style="font-size:13px">@{{ invite.owner }} invited you to</p>
+        <h1>{{ invite.trip.title }}</h1>
+        <div class="trip-meta">
+          <span class="tag"><img :src="flagUrl(invite.trip.country)" class="flag" alt=""> {{ invite.trip.country }}</span>
+          <span class="tag">{{ invite.trip.days }} days</span>
+          <span class="tag">Join as {{ invite.role }}</span>
+        </div>
+        <button class="btn btn-grad btn-lg w-100" style="margin-top:24px" @click="acceptInvite" :disabled="joining">
+          <span class="spinner" v-if="joining"></span>
+          {{ invite.alreadyMember ? 'Open trip' : 'Join trip' }}
+        </button>
+      </div>
+    </div>
+    <div class="glass auth-card" v-else-if="inviteError" style="text-align:center">
+      <h1>Hmm.</h1>
+      <p class="sub">{{ inviteError }}</p>
+      <button class="btn btn-primary" @click="go('/plan')">Go to planner</button>
+    </div>
+    <span class="spinner" v-else></span>
+  </main>
+
+  <!-- ═══ SHARE / INVITE MODAL ═══ -->
+  <div class="overlay" v-if="shareOpen" @click.self="shareOpen = false">
+    <div class="glass modal" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <div class="modal-head">
+        <div>
+          <h3 id="share-title">{{ currentRole === 'owner' ? 'Invite your crew' : 'Trip members' }}</h3>
+          <p v-if="currentRole === 'owner'">Anyone you invite needs a WanderWish account to view the trip.</p>
+        </div>
+        <button class="btn btn-icon" @click="shareOpen = false" aria-label="Close" v-html="icon('x', 14)"></button>
+      </div>
+
+      <template v-if="currentRole === 'owner'">
+        <div class="tabs" role="tablist">
+          <button :class="{ on: shareTab === 'link' }" @click="shareTab = 'link'">Invite link</button>
+          <button :class="{ on: shareTab === 'code' }" @click="shareTab = 'code'">One-time code</button>
+        </div>
+
+        <div class="field">
+          <span class="label">They'll join as</span>
+          <div class="chips">
+            <span class="chip" :class="{ on: shareRole === 'editor' }" @click="shareRole = 'editor'">Editor — can change plans</span>
+            <span class="chip" :class="{ on: shareRole === 'viewer' }" @click="shareRole = 'viewer'">Viewer</span>
+          </div>
+        </div>
+
+        <div v-if="shareTab === 'link'">
+          <p class="muted" style="font-size:13px;margin-bottom:12px">Reusable until you revoke it. Anyone with the link can join after signing in.</p>
+          <button class="btn btn-primary w-100" @click="createInvite('link')"><span v-html="icon('link', 14)"></span> Create invite link</button>
+          <div style="margin-top:16px" v-if="linkInvites.length">
+            <div class="invite-row" v-for="inv in linkInvites" :key="inv.code">
+              <div class="link-box" style="flex:1;min-width:0">
+                <code>{{ inviteUrl(inv.code) }}</code>
+                <button class="btn btn-ghost btn-sm" @click="copy(inviteUrl(inv.code))">Copy</button>
+              </div>
+              <span class="tag">{{ inv.role }}</span>
+              <button class="btn btn-icon" @click="revokeInvite(inv.code)" title="Revoke" v-html="icon('x', 14)"></button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="shareTab === 'code'">
+          <p class="muted" style="font-size:13px;margin-bottom:12px">Works once and expires in 24 hours. Your friend enters it under “Join a friend's trip”.</p>
+          <div class="big-code" v-if="freshCode" :key="freshCode">{{ freshCode.slice(0, 3) }} {{ freshCode.slice(3) }}</div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" style="flex:1" @click="createInvite('code')">{{ freshCode ? 'Generate another' : 'Generate code' }}</button>
+            <button class="btn btn-ghost" v-if="freshCode" @click="copy(freshCode)"><span v-html="icon('copy', 14)"></span> Copy</button>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:12px" v-if="codeInvites.length">{{ codeInvites.length }} unused code{{ codeInvites.length > 1 ? 's' : '' }} active</p>
+        </div>
+
+        <div class="divider"></div>
+      </template>
+
+      <span class="label">Members · {{ members.length }}</span>
+      <div class="member" v-for="m in members" :key="m.id">
+        <span class="avatar">{{ initial(m) }}</span>
+        <div class="n">@{{ m.username || m.name }} <small>{{ m.name }}</small></div>
+        <select class="select select-sm" style="width:110px" v-if="m.role !== 'owner' && currentRole === 'owner'" :value="m.role" @change="changeMemberRole(m.id, $event.target.value)" aria-label="Role">
+          <option value="editor">Editor</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <span class="tag" v-else>{{ m.role }}</span>
+        <button class="btn btn-icon" v-if="m.role !== 'owner' && currentRole === 'owner'" @click="removeMember(m.id)" title="Remove" v-html="icon('x', 14)"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>
